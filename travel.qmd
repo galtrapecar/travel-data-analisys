@@ -5,6 +5,7 @@ format:
     df-print: kable
     css: styles.css
     html-math-method: katex
+    embed-resources: true
 editor: visual
 bibliography: references.bib
 author:
