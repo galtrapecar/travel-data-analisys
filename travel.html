@@ -54,8 +54,22 @@ div.csl-indent {
 <link href="travel_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="travel_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -311,9 +325,9 @@ window.Quarto = {
 </div>
 </div>
 <p>The score with relationship to the room type is calculated as follows.</p>
-<p><span class="math display">\[
+<p><span class="math display">
 S_{pr}(a) = \frac{S_r(a)}{p} * 100
-\]</span> Where <span class="math inline">\(S_pr(a)\)</span> is the score based on price and room type, <span class="math inline">\(S_r(a)\)</span> is the score based on room type and <span class="math inline">\(p\)</span> is the price.</p>
+</span> Where <span class="math inline">S_pr(a)</span> is the score based on price and room type, <span class="math inline">S_r(a)</span> is the score based on room type and <span class="math inline">p</span> is the price.</p>
 <p>Assigning scores to the AirBnBs and plotting their average results in the following bar chart. We can see that Athens is winning with the highest score, followed by Budapest in second place. Amsterdam is last with the score of less than 2. This mimics our ranking based on price only but we can see that the differences are more pronounced in ranking based on price and room type. For example Budapest is more desirable than Lisbon but the difference in desirability has jumped from around a quarter more desirable to almost twice that.</p>
 <div class="cell">
 <div class="cell-output-display">
@@ -375,10 +389,10 @@ S_{pr}(a) = \frac{S_r(a)}{p} * 100
 </div>
 </div>
 <p>These trends might be useful to take into account when calculating the score of a city, and consequentially, it’s desirability. We propose a new metric called <strong>reachability</strong> which is calculated as follows.</p>
-<p><span class="math display">\[
+<p><span class="math display">
   R(a) = \frac{1}{d_c * 0.3 + d_m * 0.5}
-\]</span></p>
-<p>Where <span class="math inline">\(R(a)\)</span> is the reachability metric, <span class="math inline">\(d_c\)</span> is the distance to the city center and <span class="math inline">\(d_m\)</span> is the distance to the nearest metro station.</p>
+</span></p>
+<p>Where <span class="math inline">R(a)</span> is the reachability metric, <span class="math inline">d_c</span> is the distance to the city center and <span class="math inline">d_m</span> is the distance to the nearest metro station.</p>
 <p>The weights for the distance variables have been decided based on the author’s intuition and are the following.</p>
 <table class="caption-top table">
 <thead>
@@ -454,9 +468,9 @@ S_{pr}(a) = \frac{S_r(a)}{p} * 100
 </div>
 </div>
 <p>We would like to combine both scoring systems to decide on the best overall score and to select the best city based on this scoring. The formula for the best overall score is as follows.</p>
-<p><span class="math display">\[
+<p><span class="math display">
   S(a) = S_{pr}(a) * R(a) * \frac{s}{100}
-\]</span> Where <span class="math inline">\(S_{pr}(a)\)</span> is the score based on room type and price, <span class="math inline">\(R(a)\)</span> is the reachability score and <span class="math inline">\(s\)</span> is customer satisfaction given in %.</p>
+</span> Where <span class="math inline">S_{pr}(a)</span> is the score based on room type and price, <span class="math inline">R(a)</span> is the reachability score and <span class="math inline">s</span> is customer satisfaction given in %.</p>
 <p>The AirBnBs are assigned an overall score value and the average is calculated for each city in the dataset. All scores and the overall score is displayed in the table below.</p>
 <div class="cell">
 <div class="cell-output-display">
