@@ -1,0 +1,400 @@
+---
+title: "City Desirability Scoring Based on AirBnB Metrics"
+format: 
+  html: 
+    df-print: kable
+    css: styles.css
+editor: visual
+bibliography: references.bib
+author:
+  - name: Gal Trapečar (89211190)
+    email: trapecar.gal@gmail.com
+    affiliations:
+      - UP FAMNIT
+---
+
+## Introduction
+
+AirBnB is a popular online platform that provides homeowners an option to monetize their apartments and gives tourists and travelers an alternative to hotels. Homeowners can post their apartments for rent through the AirBnB web or mobile application which markets these accommodations to potential hosts. 
+
+The [Airbnb Cleaned Europe Dataset](https://www.kaggle.com/datasets/dipeshkhemani/airbnb-cleaned-europe-dataset) contains data about 9 European cities and their AirBnB metrics. The question that we want to explore in this exploratory analisys of the data set is if we can come up with a way to select the best city for a person to visit, why that would be the case, how data hints at the scoring of a city and how that correlates to personal experiences with these cities for the author.
+
+## Overview of the data set
+
+```{r include=FALSE}
+
+library(tidyverse)
+library(dplyr)
+library(ggpubr)
+
+airbnbs <- read.csv("./Aemf1.csv") %>% mutate(Price = round(Price))
+
+group.colors <- c(Budapest = "#ff924c", Amsterdam = "#ff595e", Athens ="#ffca3a", Barcelona = "#c5ca30", Berlin = "#8ac926", Lisbon = "#52a675", Paris = "#1982c4", Rome = "#4267ac", Vienna = "#6a4c93")
+
+mean_price_per_city <- 
+  airbnbs %>% 
+  group_by(City) %>%
+  mutate(MeanPrice=mean(Price)) %>% 
+  subset(select=c("City", "MeanPrice")) %>%
+  distinct(City, .keep_all = TRUE)
+
+```
+
+Dataset includes AirBnB metrics which are price, room type, whether or not the room is a shared room, whether or not the room is a private room, person capacity, whether or not the host is a superhost, whether or not the accommodation has multiple rooms and whether or not the host is a business, number of bedrooms, distance from the city center, and the distance from the metro.
+
+There are pre calculated indexes which are cleanliness rating, guest satisfaction, attraction index, etc.
+
+```{r}
+#| echo: false
+
+head(airbnbs[1:3, ])
+
+```
+
+The following dot plot graphs the relationship between guest satisfaction and the price of accommodation. We might be inclined to think that paying more for accommodation will result in better overall experience. Based on this plot that relationship doesn't always hold, although a slight trend does exist, with higher satisfaction scores given by guests that stayed in a more expensive accommodation. Cheap accommodation would imply a hit-or-miss scenario where satisfaction would either be high \(presumably because of low cost\) or lower relative to higher accommodation cost.
+
+We want to take into account other variables alongside price, so we will try to explore combinations of cost with other factors that might provide a good overall experience. We would like to study the impact of these factors to select the best city to stay in overall.
+
+```{r}
+#| echo: false
+
+airbnbs %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count()
+
+```
+
+
+
+```{r}
+#| echo: false
+
+amsterdam_cplot <- airbnbs %>%
+  filter(City == "Amsterdam") %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count(aes(color=City)) + 
+  scale_color_manual(values=group.colors)
+
+athens_cplot <- airbnbs %>%
+  filter(City == "Athens") %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count(aes(color=City)) + 
+  scale_color_manual(values=group.colors)
+
+barcelona_cplot <- airbnbs %>%
+  filter(City == "Barcelona") %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count(aes(color=City)) + 
+  scale_color_manual(values=group.colors)
+
+berlin_cplot <- airbnbs %>%
+  filter(City == "Berlin") %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count(aes(color=City)) + 
+  scale_color_manual(values=group.colors)
+
+budapest_cplot <- airbnbs %>%
+  filter(City == "Budapest") %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count(aes(color=City)) + 
+  scale_color_manual(values=group.colors)
+
+lisbon_cplot <- airbnbs %>%
+  filter(City == "Lisbon") %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count(aes(color=City)) + 
+  scale_color_manual(values=group.colors)
+
+paris_cplot <- airbnbs %>%
+  filter(City == "Paris") %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count(aes(color=City)) + 
+  scale_color_manual(values=group.colors)
+
+rome_cplot <- airbnbs %>%
+  filter(City == "Rome") %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count(aes(color=City)) + 
+  scale_color_manual(values=group.colors)
+
+vienna_cplot <- airbnbs %>%
+  filter(City == "Vienna") %>%
+  ggplot(aes(x=Guest.Satisfaction, y=Price)) + 
+  geom_count(aes(color=City)) + 
+  scale_color_manual(values=group.colors)
+
+ggarrange(plotlist=list(
+  amsterdam_cplot, 
+  athens_cplot, 
+  barcelona_cplot, 
+  berlin_cplot, 
+  budapest_cplot, 
+  lisbon_cplot, 
+  paris_cplot, 
+  rome_cplot, 
+  vienna_cplot),
+  common.legend=TRUE)
+
+```
+
+
+The following bar chart shows the average price of an AirBnB grouped by city. From the chart we can see that the priciest AirBnBs are located in Amsterdam and Paris while the cheapest are in Athens ans Budapest. We would like to explore the ranking of cities based on price with relationship to the different room types.
+
+
+```{r}
+#| echo: false
+
+ggplot(mean_price_per_city, aes(x=City, y=MeanPrice, fill=City)) +
+  geom_col() +
+  scale_y_continuous(labels = function(x) format(x, accuracy=1, scientific=FALSE)) +
+  scale_fill_manual(values=group.colors)
+
+```
+
+These are the available room types which include whole apartments, private rooms and shared rooms. We scored the kind off accommodations by providing arbitrary values based on personal preference. There scores given were based on the assumption that private rooms and whole apartments are more desirable, even more so when the price is taken into account. The scores are 10 for whole apartments, 3 for private rooms and 1 for shared rooms, deemed to be the least desirable.
+
+```{r}
+#| echo: false
+
+objectively_score_room_type = function(type) {
+  if (type == "Private room") {return(3)}
+  else if (type == "Shared room") {return(1)}
+  else if (type == "Entire home/apt") {return(10)}
+  else {return(0)}
+}
+
+roomTypes <- unique(airbnbs$Room.Type)
+
+data.frame(
+  Room.Type=roomTypes, 
+  Objective.Score=c(
+    objectively_score_room_type(roomTypes[1]), 
+    objectively_score_room_type(roomTypes[2]), 
+    objectively_score_room_type(roomTypes[3])
+    )
+  )
+
+```
+
+The score with relationship to the room type is calculated as follows.
+
+$$
+ S_{pr}(a) = \frac{S_r(a)}{p} * 100
+$$
+Where $S_pr(a)$ is the score based on price and room type, $S_r(a)$ is the score based on room type and $p$ is the price.
+
+Assigning scores to the AirBnBs and plotting their average results in the following bar chart. We can see that Athens is winning with the highest score, followed by Budapest in second place. Amsterdam is last with the score of less than 2. This mimics our ranking based on price only but we can see that the differences are more pronounced in ranking based on price and room type. For example Budapest is more desirable than Lisbon but the difference in desirability has jumped from around a quarter more desirable to almost twice that.
+
+```{r}
+#| echo: false
+
+airbnbs_scored_by_price <- airbnbs %>%
+  rowwise() %>%
+  mutate(Objective.Score=((objectively_score_room_type(Room.Type)) / Price) * 100)
+
+airbnbs <- airbnbs_scored_by_price %>%
+  group_by(City) %>%
+  mutate(Mean.Objective.Score=mean(Objective.Score))
+
+airbnbs %>% 
+  subset(select=c("City", "Mean.Objective.Score")) %>%
+  distinct(City, .keep_all = TRUE) %>%
+  ggplot(aes(x=City, y=Mean.Objective.Score, fill=City)) +
+  geom_col() +
+  scale_fill_manual(values=group.colors)
+
+```
+
+For reference we included the summary of the price versus the summary of our new scoring for the best ranked city (Athens) and the worst ranked city (Amsterdam).
+
+::: {.center}
+**Athens**
+:::
+
+```{r}
+#| echo: false
+#| class-output: center
+
+# Calculate for Athens which is supposedly the best city
+
+airbnbs %>% 
+  filter(City == "Athens") %>%
+  subset(select=c("Price", "Objective.Score")) %>%
+  summary(airbnbs)
+
+
+```
+
+::: {.center}
+**Amsterdam**
+:::
+
+```{r}
+#| echo: false
+#| class-output: center
+
+# Calculate for Amsterdam which is supposedly the worst city
+
+airbnbs %>% 
+  filter(City == "Amsterdam") %>%
+  subset(select=c("Price", "Objective.Score")) %>%
+  summary(airbnbs)
+
+```
+
+
+We would like to add more factors to the scoring system and study their effects on the overall score. The factors we would like to consider are the distance of the accommodation from the city center, as well as the distance from the nearest metro station. We would like to consider these factors as they play a role on the enjoyability of staying in a city, as better public transport leads to the higher satisfaction of the author.
+
+
+The following violin chart shows the distribution of AirBnBs, based on city, with regards to the distances from the city center. We can spot that Berlin has a stretched out distribution with little accommodations in the city center and more choices of accommodations a longer way outside the center. A different trend is seen in Budapest, Athens, and Lisbon, where the majority of the AirBnBs are situated in the city center, giving their plots a wider and shorter shape.
+
+```{r}
+#| echo: false
+
+airbnbs %>%
+  ggplot(aes(x=City, y=City.Center..km., fill=City)) +
+  geom_violin() +
+  scale_fill_manual(values=group.colors)
+
+```
+
+We present a similar chart for the distance of AirBnBs to the nearest metro station. We can observe the advantage of staying in Paris, where virtually all AirBnBs are situated near a metro station. We can deduce from this that Paris has the best public transport coverage out of all cities sampled. A different trend is observed with Amsterdam and Rome, with the narrowest charts signaling poor public transport coverage.
+
+
+```{r}
+#| echo: false
+
+airbnbs %>%
+  ggplot(aes(x=City, y=Metro.Distance..km., fill=City)) +
+  geom_violin() +
+  scale_fill_manual(values=group.colors)
+
+```
+
+
+These trends might be useful to take into account when calculating the score of a city, and consequentially, it's desirability. We propose a new metric called **reachability** which is calculated as follows.
+
+$$
+  R(a) = \frac{1}{d_c * 0.3 + d_m * 0.5}
+$$
+
+Where $R(a)$ is the reachability metric, $d_c$ is the distance to the city center and $d_m$ is the distance to the nearest metro station.
+
+The weights for the distance variables have been decided based on the author's intuition and are the following.
+
+|City.Center..km.|Metro.Distance..km.|
+|-|-|
+|0.3|0.5|
+
+The score of 0.3 for the distance to the city center has been decided like so for the reason of giving less weight to the AirBnB's position in regards to the city center and more weight to the distance to the nearest metro station. The reasoning behind the decision was that the accommodation is more desirable if less walking is needed, meaning that a closer metro station would me more desirable that a closer city center.
+
+For reference, a few examples are given of the scoring based on reachability in the following table.
+
+```{r}
+#| echo: false
+
+center_d_weight <- 0.3
+metro_d_weight <- 0.5
+
+compute_reachability <- function(center_d, metro_d) {
+  return(1 / (center_d * center_d_weight) + (metro_d * metro_d_weight))
+}
+
+airbnbs <- airbnbs %>% 
+  rowwise() %>%
+  mutate(Reachability=compute_reachability(City.Center..km., Metro.Distance..km.)) %>%
+  group_by(City) %>%
+  mutate(Mean.Reachability=mean(Reachability))
+
+airbnbs %>%
+  subset(select=c("City", "City.Center..km.", "Metro.Distance..km.", "Reachability", "Mean.Reachability")) %>%
+  head(3)
+
+```
+
+
+Given the new scoring, a bar chart is given to visualize the average reachability score based on distance metrics. We can observe that Lisbon has overtaken Budapest as the most reachable city of all since it had both high city center distance score and high closest metro distance score, as opposed to Paris which is assigned a low score (2nd last place) even though it had good metro coverage. Second place is Budapest with Amsterdam, Athens and Barcelona being close for third place. Worst scored is Berlin which, given this score and assumption has the worst AirBnB placement of all cities.
+
+
+```{r}
+#| echo: false
+
+airbnbs %>%
+  distinct(City, .keep_all = TRUE) %>%
+  ggplot(aes(x=City, y=Mean.Reachability, fill=City)) +
+  geom_col() +
+  scale_fill_manual(values=group.colors)
+
+```
+
+
+We would like to combine both scoring systems to decide on the best overall score and to select the best city based on this scoring. The formula for the best overall score is as follows.
+
+$$
+  S(a) = S_{pr}(a) * R(a) * \frac{s}{100}
+$$
+Where $S_{pr}(a)$ is the score based on room type and price, $R(a)$ is the reachability score and $s$ is customer satisfaction given in %.
+
+The AirBnBs are assigned an overall score value and the average is calculated for each city in the dataset. All scores and the overall score is displayed in the table below.
+
+
+```{r}
+#| echo: false
+
+# Calculation: 
+# score = 
+#    (room_score / Price * 100) * 
+#    (1 / (0.3 * center_distance + 0.5 * metro_distance)) *
+#    (satisfaction / 100) /
+#    100
+
+# score = objective_score * reachability * satisfaction / 100
+
+calculate_overall_score <- function(objective_score, reachability, satisfaction) {
+  return(objective_score * reachability * satisfaction / 100)
+}
+
+airbnbs <- airbnbs %>%
+  rowwise() %>%
+  mutate(Overall.Score=calculate_overall_score(Objective.Score, Reachability, Guest.Satisfaction)) %>%
+  group_by(City) %>%
+  mutate(Mean.Overall.Score=mean(Overall.Score)) %>%
+  group_by(City) %>%
+  mutate(Mean.Guest.Satisfaction=mean(Guest.Satisfaction))
+
+airbnbs %>% 
+  distinct(City, .keep_all = TRUE) %>%
+  subset(select=c("City", "Mean.Objective.Score", "Reachability", "Mean.Guest.Satisfaction",  "Mean.Overall.Score")) %>%
+  arrange(desc(Mean.Overall.Score)) %>%
+  head(10)
+
+```
+
+The final bar chart displays average overall scores asiigned to each of the 9 cities.
+
+```{r}
+#| echo: false
+
+airbnbs %>% 
+  distinct(City, .keep_all = TRUE) %>%
+  ggplot(aes(x=City, y=Mean.Overall.Score, fill=City)) +
+  geom_col() +
+  scale_fill_manual(values=group.colors)
+
+```
+
+## Results
+
+With the score of 20.23, Budapest has been assigned as the highest ranking city both for the price value, reachability and overall satisfaction. Second best scored is Athens with a close score. Amsterdam, Berlin and Paris are the lowest scored, presumably because of the high price to value ratio and poor AirBnB distribution, with more AirBnBs on the outskirts of the city center. Vienna went unmentioned while it kept a consistent mediocre scoring for AirBnB desirability.
+
+As a follow up study, more metrics could be considered in the scoring that might provide more reliable results. The dataset provides more factors to consider like pre calculated attraction and restaurant indexes.
+
+## Author's Remarks
+
+The result of this study is consistent with author's personal findings as Budapest is author's favorite city and they highly recommend it. On the real note, although I like Budapest this result was highly unanticipated and the ranking of Athens as the second best option was surprising. I expected Amsterdam and Rome to be higher ranked. Berlin tied for last place was the most surprising of all results since the city is fairly popular among younger travelers.
+
+## References
+
+::: {#refs}
+KHEMANI, DIPESH. “Airbnb Cleaned Europe Dataset,” n.d. https://www.kaggle.com/datasets/dipeshkhemani/airbnb-cleaned-europe-dataset.
+:::
